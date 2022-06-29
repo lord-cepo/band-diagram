@@ -5,7 +5,7 @@ import warnings
 doping in cm-3
 '''
 
-E_MASS = 1.457501392e-53 # cm-2 s2
+E_MASS = 5.6933648125e-16 # cm-2 s2
 kT = 0.026   # eV @ 300 K
 PLANCK_H = 4.135667e-15  # eV s
 
@@ -34,14 +34,17 @@ class metal(material):
         super().__init__(np.inf, 0, 0, work_function)
 
 class semiconductor(material):
-    def __init__(self, Eg, electron_affinity, epsilon=1., effective_m_e=1, effective_m_h=None, doping_type=None, doping=0):
+    def __init__(self, Eg, electron_affinity, epsilon=1., doping_type=None, doping=None, effective_m_e=1, effective_m_h=None):
         if effective_m_h is None:
             effective_m_h = effective_m_e
         
         Nc = 2*(2*np.pi*E_MASS*effective_m_e*kT/PLANCK_H**2)**1.5
         Nv = 2*(2*np.pi*E_MASS*effective_m_h*kT/PLANCK_H**2)**1.5
-        ni = np.sqrt(Nc*Nv*np.exp(Eg/kT))
-        
+        ni = np.sqrt(Nc*Nv*np.exp(-Eg/kT))
+
+        if doping is not None and doping < ni:
+            warnings.warn("You have chosen a too low doping (< intrinsic doping), units are cm-3. Assuming no doping")
+
         if doping_type == 'n':
             self.n = doping
             self.p = ni**2/doping
@@ -55,6 +58,6 @@ class semiconductor(material):
             self.n = ni
             self.p = ni
         
-        Ec = kT*np.log(self.n/Nc)
-        Ev = -kT*np.log(self.p/Nv)
+        Ec = -kT*np.log(self.n/Nc)
+        Ev = kT*np.log(self.p/Nv)
         super().__init__(epsilon, Ec, Ev, electron_affinity)
