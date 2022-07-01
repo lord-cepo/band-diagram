@@ -50,31 +50,36 @@ class mesh:
         for i, position in enumerate(self.interfaces):
             left_overflow = False
             right_overflow = False
-            
+            epsilon_left = self.layers[i].material.epsilon
+            epsilon_right = self.layers[i+1].material.epsilon
+            thickness_left = self.layers[i].thickness
+            thickness_right = self.layers[i+1].thickness
             V_bi = self.levels['E0'][position]-self.levels['E0'][position-1]
-            a = np.sqrt(2*EPSILON_0*self.layers[i].material.epsilon*self.layers[i+1].material.epsilon /
-                        (   densities[i]*self.layers[i].material.epsilon +
-                            densities[i+1]*self.layers[i+1].material.epsilon) *
-                        np.abs((V_bi-self.applied_voltage))/E_CHARGE ) * 1000 # cm to um
-            depletion_left = a*np.sqrt(densities[i+1]/densities[i])
-            depletion_right = a*np.sqrt(densities[i]/densities[i+1])
             
-            if depletion_left > self.layers[i].thickness:
+            a = np.sqrt(2*EPSILON_0*epsilon_left*epsilon_right /
+                        (   densities[i]*epsilon_left +
+                            densities[i+1]*epsilon_right) *
+                        np.abs((V_bi-self.applied_voltage))/E_CHARGE )
+            depletion_left = a*np.sqrt(densities[i+1]/densities[i])*1e4 # um
+            depletion_right = a*np.sqrt(densities[i]/densities[i+1])*1e4 # um
+            
+            if depletion_left > thickness_left:
                 left_overflow = True
-                start = round(position - self.layers[i].thickness/self.thickness*n_points)
+                start = round(position - thickness_left/self.thickness*n_points)
             else:
                 start = round(position - depletion_left/self.thickness*n_points)
                 
-            if depletion_right > self.layers[i+1].thickness:
+            if depletion_right > thickness_right:
                 right_overflow = True
-                end = round(position + self.layers[i+1].thickness/self.thickness*n_points)
+                end = round(position + thickness_right/self.thickness*n_points)
             else:
                 end = round(position + depletion_right/self.thickness*n_points)
             
             for k in self.levels.keys():
-                self.levels[k] += np.concatenate((np.zeros(start),
-                    E_CHARGE*densities[i]/(2*EPSILON_0*self.layers[i].material.epsilon)*(self.grid[start:position]-position + depletion_left)**2,
-                    E_CHARGE*densities[i+1]/(2*EPSILON_0*self.layers[i+1].material.epsilon)*(self.grid[end:position]-position - depletion_right)**2,
+                self.levels[k] += np.concatenate((
+                    np.zeros(start),
+                    -densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2,
+                    densities[i+1]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_right)*((self.grid[position:end] - position*self.thickness/n_points - depletion_right))**2,
                     np.zeros(n_points-end)
                 ))
                 
