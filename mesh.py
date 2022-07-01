@@ -78,11 +78,10 @@ class mesh:
             for k in self.levels.keys():
                 self.levels[k] += np.concatenate((
                     np.zeros(start),
-                    -densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2,
-                    densities[i+1]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_right)*((self.grid[position:end] - position*self.thickness/n_points - depletion_right))**2,
+                    np.sign(V_bi)*densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2,
+                    -np.sign(V_bi)*densities[i+1]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_right)*((self.grid[position:end] - position*self.thickness/n_points - depletion_right))**2,
                     np.zeros(n_points-end)
                 ))
-                
                 
     
     def plot(self, display_E0=False):
