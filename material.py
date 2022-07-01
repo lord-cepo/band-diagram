@@ -22,16 +22,10 @@ class material:
             'Ev': Ev,
             'E0': Ec + work
         }
-    
-    def is_metal(self):
-        pass
-
-    def is_semiconductor(self):
-        pass
 
 class metal(material):
     def __init__(self, work_function):
-        super().__init__(np.inf, 0, 0, work_function)
+        super().__init__(1e10, 0, 0, work_function) # epsilon = 1e10 = np.inf
 
 class semiconductor(material):
     def __init__(self, Eg, electron_affinity, epsilon=1., doping_type=None, doping=None, effective_m_e=1, effective_m_h=None):
@@ -57,7 +51,13 @@ class semiconductor(material):
                 doping_type = None
             self.n = ni
             self.p = ni
-        
+            
         Ec = -kT*np.log(self.n/Nc)
         Ev = kT*np.log(self.p/Nv)
         super().__init__(epsilon, Ec, Ev, electron_affinity)
+    
+    def is_p_doped(self):
+        return self.p > self.n            
+    
+    def is_n_doped(self):
+        return self.n > self.p
