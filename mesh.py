@@ -9,7 +9,6 @@ E_CHARGE = 1.602176634e-19    # C
 class mesh:
     def __init__(self, layers, n_points=1000):
         self.thickness = sum([layer.thickness for layer in layers]) 
-        self.applied_voltage = 0.
         self.grid = np.linspace(0, self.thickness, n_points)
         self.levels = {
             'Ec': np.zeros(n_points),
@@ -31,6 +30,7 @@ class mesh:
         self.Ef = np.zeros(n_points) # Fermi level is common at 0 applied voltage
         self.layers = layers
         del self.interfaces[0] # remove -1:0-th interface
+        self.applied_voltage = np.zeros(len(self.interfaces))
         
     
     def bend(self):
@@ -54,12 +54,12 @@ class mesh:
             epsilon_right = self.layers[i+1].material.epsilon
             thickness_left = self.layers[i].thickness
             thickness_right = self.layers[i+1].thickness
-            V_bi = self.levels['E0'][position]-self.levels['E0'][position-1]
+            delta_V = self.levels['E0'][position]-self.levels['E0'][position-1]
             
             a = np.sqrt(2*EPSILON_0*epsilon_left*epsilon_right /
                         (   densities[i]*epsilon_left +
                             densities[i+1]*epsilon_right) *
-                        np.abs((V_bi-self.applied_voltage))/E_CHARGE )
+                        np.abs(delta_V)/E_CHARGE )
             depletion_left = a*np.sqrt(densities[i+1]/densities[i])*1e4 # um
             depletion_right = a*np.sqrt(densities[i]/densities[i+1])*1e4 # um
             
@@ -78,11 +78,12 @@ class mesh:
             for k in self.levels.keys():
                 self.levels[k] += np.concatenate((
                     np.zeros(start),
-                    np.sign(V_bi)*densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2,
-                    -np.sign(V_bi)*densities[i+1]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_right)*((self.grid[position:end] - position*self.thickness/n_points - depletion_right))**2,
+                    np.sign(delta_V)*densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2,
+                    -np.sign(delta_V)*densities[i+1]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_right)*((self.grid[position:end] - position*self.thickness/n_points - depletion_right))**2,
                     np.zeros(n_points-end)
                 ))
-                
+        
+    
     
     def plot(self, display_E0=False):
         for key, level in self.levels.items():
@@ -90,10 +91,23 @@ class mesh:
                 plt.plot(self.grid, level, label=key)
         plt.plot(self.grid, self.Ef)
         plt.legend()
-        plt.tight_layout()
-        plt.show()
+        # plt.tight_layout()
+        # plt.show()
         
         
-    def apply_voltage(volt, right=True):
-        pass
+    def apply_voltage(self, volt, ith_layer=None):
+        n_of_interfaces = len(self.interfaces)
+        n_points = self.Ef.size
+        if ith_layer is None:
+            ith_layer = n_of_interfaces
         
+        positions = [0] + self.interfaces + [n_points]
+        arr = np.concatenate((
+            np.zeros(positions[ith_layer]),
+            volt*np.ones(positions[ith_layer+1]-positions[ith_layer]),
+            np.zeros(n_points-positions[ith_layer+1])
+        ))
+        
+        self.Ef -= arr
+        for k in self.levels.keys():
+            self.levels[k] -= arr
