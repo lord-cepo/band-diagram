@@ -5,7 +5,7 @@ import warnings
 doping in cm-3
 '''
 
-E_MASS = 5.6933648125e-16 # cm-2 s2
+E_MASS = 5.6933648125e-16 # eV cm-2 s2
 kT = 0.026   # eV @ 300 K
 PLANCK_H = 4.135667e-15  # eV s
 

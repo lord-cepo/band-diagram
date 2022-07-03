@@ -76,6 +76,8 @@ class mesh:
                 end = round(position + depletion_right/self.thickness*n_points)
             
             for k in self.levels.keys():
+                ab = np.sign(delta_V)*densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2
+
                 self.levels[k] += np.concatenate((
                     np.zeros(start),
                     np.sign(delta_V)*densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2,
@@ -85,14 +87,15 @@ class mesh:
         
     
     
-    def plot(self, display_E0=False):
+    def plot(self, display_E0=False, show=True):
         for key, level in self.levels.items():
             if key != 'E0' or display_E0:
                 plt.plot(self.grid, level, label=key)
         plt.plot(self.grid, self.Ef)
         plt.legend()
-        # plt.tight_layout()
-        # plt.show()
+        if show:
+            plt.tight_layout()
+            plt.show()
         
         
     def apply_voltage(self, volt, ith_layer=None):
