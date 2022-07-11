@@ -25,7 +25,7 @@ class material:
 
 class metal(material):
     def __init__(self, work_function):
-        super().__init__(1e10, 0, 0, work_function) # epsilon = 1e10 = np.inf
+        super().__init__(1e30, 0, 0, work_function) # epsilon = 1e30 = np.inf
 
 class semiconductor(material):
     def __init__(self, Eg, electron_affinity, epsilon=1., doping_type=None, doping=None, effective_m_e=1, effective_m_h=None):
@@ -38,7 +38,8 @@ class semiconductor(material):
 
         if doping is not None and doping < ni:
             warnings.warn("You have chosen a too low doping (< intrinsic doping), units are cm-3. Assuming no doping")
-
+            doping_type = None
+        
         if doping_type == 'n':
             self.n = doping
             self.p = ni**2/doping
@@ -47,13 +48,13 @@ class semiconductor(material):
             self.n = ni**2/doping
         else:
             if doping_type is not None:
-                warnings.warn("You have selected a doping type different than 'n' or 'p'. Assuming no doping")
+                warnings.warn("You have selected a doping type other than 'n' or 'p'. Assuming no doping")
                 doping_type = None
             self.n = ni
             self.p = ni
             
-        Ec = -kT*np.log(self.n/Nc)
-        Ev = kT*np.log(self.p/Nv)
+        Ec = kT*np.log(Nc/self.n)
+        Ev = -kT*np.log(Nv/self.p)
         super().__init__(epsilon, Ec, Ev, electron_affinity)
     
     def is_p_doped(self):

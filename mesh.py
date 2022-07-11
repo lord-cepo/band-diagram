@@ -76,8 +76,6 @@ class mesh:
                 end = round(position + depletion_right/self.thickness*n_points)
             
             for k in self.levels.keys():
-                ab = np.sign(delta_V)*densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2
-
                 self.levels[k] += np.concatenate((
                     np.zeros(start),
                     np.sign(delta_V)*densities[i]*1e-8*E_CHARGE/(2*EPSILON_0*epsilon_left)*((self.grid[start:position] - position*self.thickness/n_points + depletion_left))**2,

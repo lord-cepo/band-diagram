@@ -1,6 +1,5 @@
 import material
 import mesh
-import matplotlib.pyplot as plt
 
 Si_n = material.semiconductor(Eg=1.12, electron_affinity=4.05, epsilon=11.7, doping_type='n', doping=1e15)
 Si_p = material.semiconductor(Eg=1.12, electron_affinity=4.05, epsilon=11.7, doping_type='p', doping=1e15)
@@ -19,7 +18,7 @@ AlGaAs = material.semiconductor(Eg=1.424+1.247*x if x<0.45 else 1.9+0.125*x+0.14
                                 doping_type='n',
                                 doping=GaAs.n
 )
-Al = material.metal(4.1)
+Al = material.metal(work_funcion=4.1)
 
 def example_diode():
     list_layers = [(10, Si_n), (10, Si_p)]
