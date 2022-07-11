@@ -26,3 +26,4 @@ def test_nondegenerate(Eg, doping_type, doping):
        obj = material.semiconductor(Eg, electron_affinity=Eg+1., doping_type=doping_type, doping=doping)
        assert obj.levels['Ec'] >= 0
        assert obj.levels['Ev'] <= 0
+
