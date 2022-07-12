@@ -1,5 +1,6 @@
 import material
-import mesh
+import band
+
 
 Si_n = material.semiconductor(Eg=1.12, electron_affinity=4.05, epsilon=11.7, doping_type='n', doping=1e15)
 Si_p = material.semiconductor(Eg=1.12, electron_affinity=4.05, epsilon=11.7, doping_type='p', doping=1e15)
@@ -18,21 +19,20 @@ AlGaAs = material.semiconductor(Eg=1.424+1.247*x if x<0.45 else 1.9+0.125*x+0.14
                                 doping_type='n',
                                 doping=GaAs.n
 )
-Al = material.metal(work_funcion=4.1)
+Al = material.metal(work_function=4.1)
 
 def example_diode():
-    list_layers = [(10, Si_n), (10, Si_p)]
+    list_layers = [(2, Si_n), (2, Si_p)]
     layers = [ material.layer(*el) for el in list_layers]
-    diode = mesh.mesh(layers=layers)
-    # diode.plot()
-    # diode.apply_voltage(volt=-5.)
+    diode = band.band_diagram(layers=layers)
+    diode.apply_voltage(volt=-1.0)
     diode.bend()
-    diode.plot(display_E0=True)
+    diode.plot(display_E0=False)
 
 def example_npn():
     list_layers = [(5, Si_n), (5, Si_p), (5, Si_n)]
     layers = [ material.layer(*el) for el in list_layers]
-    npn = mesh.mesh(layers=layers)
+    npn = band.band_diagram(layers=layers)
     
     # npn.bend()
     # npn.plot(display_E0=False) # display_E0=True
@@ -45,7 +45,7 @@ def example_npn():
 def example_schottky_contact():
     list_layers = [(1, Al), (5, Si_n)]
     layers = [ material.layer(*el) for el in list_layers]
-    schottky_contact = mesh.mesh(layers=layers)
+    schottky_contact = band.band_diagram(layers=layers)
     
     schottky_contact.bend()
     schottky_contact.plot()
@@ -53,11 +53,11 @@ def example_schottky_contact():
 def example_heterojunction():
     list_layers = [(1, GaAs), (1, AlGaAs)]
     layers = [material.layer(*el) for el in list_layers]
-    htj = mesh.mesh(layers)
+    htj = band.band_diagram(layers)
     htj.bend()
     htj.plot(display_E0=True)
 
-# example_diode()
+example_diode()
 # example_npn()
 # example_schottky_contact()
-example_heterojunction()
+# example_heterojunction()

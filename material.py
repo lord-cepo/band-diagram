@@ -11,7 +11,7 @@ class layer:
     ----------------------------------------------------------------------------
     Once materials are defined, layer is only used to couple material type
     with thickness. An ordered list of layers (left to right) is used to 
-    initialize mesh object (top level class)
+    initialize band_diagram object (top level class)
     
     Attributes:
     ----------------------------------------------------------------------------

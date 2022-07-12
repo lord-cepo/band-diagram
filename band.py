@@ -5,8 +5,10 @@ import material as mat
 EPSILON_0 = 8.8541878128e-14  # C V-1 cm-1
 E_CHARGE = 1.602176634e-19    # C
 
-
-class mesh:
+class band_diagram:
+    """
+    
+    """
     def __init__(self, layers, n_points=1000):
         self.thickness = sum([layer.thickness for layer in layers]) 
         self.grid = np.linspace(0, self.thickness, n_points)

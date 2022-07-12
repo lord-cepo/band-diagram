@@ -1,5 +1,5 @@
 import material
-import mesh
+import band
 from hypothesis import given, strategies as st
 
 @given(work_function=st.floats(min_value=1e-2, max_value=1e2))
