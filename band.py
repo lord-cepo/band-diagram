@@ -1,15 +1,17 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import material as mat
+import matplotlib.pyplot as plt # type: ignore
+import material
 import warnings
+
+from collections.abc import Iterable
 
 EPSILON_0 = 8.8541878128e-14  # C V-1 cm-1
 E_CHARGE = 1.602176634e-19    # C
 
 class band_diagram:
     """
-    Description:
-    ----------------------------------------------------------------------------
+    Description
+    -----------
     Describes the entire band diagram (energy levels as a function of the
     spatial extension of the device). Bands are bent according to the Anderson's
     rule: vacuum level is continuous; Fermi level is unique at equilibrium.
@@ -17,8 +19,8 @@ class band_diagram:
     correction of the order of the thermal energy of 26 meV - not implemented -)
     for bendings far greater than thermal energy. 
     
-    Methods:
-    ----------------------------------------------------------------------------
+    Methods
+    -------
     bend()
         does the dirty job of bending bands in both sides of each interface,
         allowing E0 to be continuous.
@@ -27,39 +29,40 @@ class band_diagram:
         false if we want to insert plt.show() manually (multiple plots in same
         pane)
     
-    Attributes:
-    ----------------------------------------------------------------------------
+    Attributes
+    ----------
     thickness : float
-        sum of thicknesses of various layers
-    grid : np.array()
-        grid of points, from zero to thickness
-    levels : dict
+        sum of thicknesses of various layers (um)
+    grid : np.ndarray
+        grid of points, from zero to thickness (um)
+    levels : dict[str, numpy.ndarray]
         contains the three levels, Ec (conduction), Ev (valence) and E0 (vacuum)
         . Fermi is defined as zero, levels bend equally, mantaining the same
-        distance between each others
-    layers : list
+        distance between each others. Levels are in eV.
+    layers : List
         copy of the input array of N layers
     interfaces : list[int]
         list of N-1 integers, in which each interface point is given as an index
         of the grid array. 
-    Ef : np.array()
+    Ef : np.ndarray
         Fermi level, separate from the other levels. It's initialized at zero
         and changed only by applying voltage
     """
-    def __init__(self, layers, n_points=1000) -> None:
+    def __init__(self, 
+        layers: Iterable[material.layer],
+        n_points: int = 1000,  
+        ) -> None:
         """
-        Description:
-        ------------------------------------------------------------------------
         From the layers list, this constructor creates builds flat Ec, Ev, E0
         levels, keeping the Fermi level constant.
 
-        Arguments:
-        ------------------------------------------------------------------------
-        layers : Iterable[layer]
+        Parameters
+        ----------
+        layers : Iterable[material.layer]
             list of layer instances. Example: [layer(thickness1, material1),
             layer(thickness2, material2)]. Layer is inside material module.
-        n_points : int (optional)
-            Number of points in the actual plot. Defaults to 1000.
+        n_points : int, optional
+            Number of points in the actual plot, by default 1000.
         """
         self.thickness = sum([layer.thickness for layer in layers]) 
         self.grid = np.linspace(0, self.thickness, n_points)
@@ -85,7 +88,8 @@ class band_diagram:
         del self.interfaces[0] # remove -1:0-th interface
         
     
-    def bend(self) -> None:
+    def bend(self
+             ) -> None:
         """
         Generates the right amount of bending to cancel out discontinuities on
         E0. Formulas are found in docs. Once device is initializated, first 
@@ -95,15 +99,15 @@ class band_diagram:
         # metals (1e23 cm-3)
         densities = []
         n_points = self.Ef.size
-        for material in [layer.material for layer in self.layers]:
-            density = 0
-            if type(material) is mat.metal:
+        for mat in [layer.material for layer in self.layers]:
+            density = 0.0
+            if type(mat) is material.metal:
                 density = 1e23 # el. densities of noble metals (cm-3)
-            elif type(material) is mat.semiconductor:
-                if material.is_p_doped():
-                    density = material.p
+            elif type(mat) is material.semiconductor:
+                if mat.is_p_doped():
+                    density = mat.p
                 else:
-                    density = material.n
+                    density = mat.n
             else:
                 warnings.warn("Material is not metal nor semic, behaviour\
                     not implemented yet")
@@ -156,18 +160,21 @@ class band_diagram:
         
     
     
-    def plot(self, display_E0=False, show=True):
+    def plot(self, 
+        display_E0: bool = False, 
+        show: bool = True
+        ) -> None:
         """
         Plotter of band_diagram. Plots conduction band Ec, valence band Ev,
         Fermi level Ef. 
 
-        Arguments:
-        ------------------------------------------------------------------------
-        display_E0 : bool (optional)
+        Parameters
+        ----------
+        display_E0 : bool, optional
             Displays vacuum level. Defaults to False.
-        show : bool (optional)
+        show : bool, optional
             If False, plt.show() has to be performed manually. Useful if we want
-            multiple plots on one figure. Defaults to True.
+            multiple plots on one figure, by default True
         """
         for key, level in self.levels.items():
             if key != 'E0' or display_E0:
@@ -179,21 +186,24 @@ class band_diagram:
             plt.show()
         
         
-    def apply_voltage(self, volt, ith_layer=None) -> None:
+    def apply_voltage(self, 
+        volt: float, 
+        ith_layer: int = None
+        ) -> None:
         """
         Translate rigidly all the levels of the specified layer by minus voltage
-
-        Arguments:
-        ------------------------------------------------------------------------
+        
+        Parameters
+        ----------
         volt : float
-            Voltage applied (in Volts). If positive, the energy shift will be
+            Voltage applied (in Volts). If positive, the energy shift will be 
             negative: energy = (-e) * voltage
-        ith_layer : int (optional) 
+        ith_layer : int, optional
             Specifies which layer will receive voltage. Every other layer should
             be considered as grounded. Naturally, we are under the (not so 
             realistic) hypothesis that voltage drops, and hence jumps in Ef,
             can exist only at the interfaces. If not specified, the rightmost
-            layer will receive the voltage. Defaults to None
+            layer will receive the voltage, by default None
         """
         # equals to N_layers - 1
         n_of_interfaces = len(self.interfaces)

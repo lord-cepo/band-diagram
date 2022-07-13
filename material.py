@@ -5,64 +5,35 @@ E_MASS = 5.6933648125e-16 # eV cm-2 s2
 kT = 0.026   # eV @ 300 K
 PLANCK_H = 4.135667e-15  # eV s
 
-class layer:
-    """
-    Description:
-    ----------------------------------------------------------------------------
-    Once materials are defined, layer is only used to couple material type
-    with thickness. An ordered list of layers (left to right) is used to 
-    initialize band_diagram object (top level class)
-    
-    Attributes:
-    ----------------------------------------------------------------------------
-    thickness : float
-        thickness of layer in micrometer (um)
-    material : material
-        material type. Some general use materials are already defined in
-        tutorials
-    """
-    def __init__(self, thickness, material):
-        """
-        Description:
-        ------------------------------------------------------------------------
-        Once materials are defined, layer is only used to couple material type
-        with thickness. An ordered list of layers (left to right) is used to 
-        initialize mesh object (top level class)
-        
-        Arguments:
-        ------------------------------------------------------------------------
-        thickness : float
-            thickness of layer in micrometer (um)
-        material : material
-            material type. Some general use materials are already defined in
-            tutorials
-        """
-        self.thickness = thickness
-        self.material = material
 
 class material:
     """
-    Description:
-    ----------------------------------------------------------------------------
+    Description
+    -----------
     General use class, use it if you want to create an artificial material,
     choosing directly the energy levels. Otherwise, use "semiconductor" or
     "metal" constructor for correct initialization.
     
-    material Attributes:
-    ----------------------------------------------------------------------------
+    Attributes
+    ----------
     epsilon : float
         DC dielectric constant, used inside poisson equations. Large dielectric
         means low band bending.
-    levels : dict
+    levels : Mapping[str, float]
         Contains conduction and valence levels ('Ec', 'Ev') and vacuum level E0.
         Fermi Energy is implicitely equal to zero.
     """
-    def __init__(self, epsilon, Ec, Ev, work):
+    def __init__(self, 
+        epsilon: float, 
+        Ec: float, 
+        Ev: float, 
+        work: float
+        ) -> None:
         """
         The use of this constructor is not indicated. Use semiconductor() or
         metal() instead.
 
-        Arguments:
+        Parameters
         ------------------------------------------------------------------------
         epsilon : float
             Dc dielectric constant
@@ -88,18 +59,21 @@ class metal(material):
     Fermi level, DC dielectric constant goes to infinity (a large number is
     chosen because (np.inf+ float)/np.inf = nan instead of one)
     """
-    def __init__(self, work_function):
+    def __init__(self, 
+        work_function: float
+        ) -> None:
         """
         Conduction and valence bands coincide with Fermi level, DC dielectric 
         constant is a very large number.
 
-        Arguments:
+        Parameters
         ------------------------------------------------------------------------
         work_function : float
             Difference between vacuum level (E0) and Fermi level (Ef). It is
             generally expected to be positive.
         """
         super().__init__(1e30, 0, 0, work_function) # epsilon = 1e30 = np.inf
+
 
 class semiconductor(material):
     """
@@ -129,8 +103,15 @@ class semiconductor(material):
         Contains conduction and valence levels ('Ec', 'Ev') and vacuum level E0.
         Fermi Energy is implicitely equal to zero.
     """
-    def __init__(self, Eg, electron_affinity, epsilon=1., doping_type=None, 
-                 doping=None, effective_m_e=1, effective_m_h=None):
+    def __init__(self, 
+        Eg: float, 
+        electron_affinity: float, 
+        epsilon: float = 1.0, 
+        doping_type: str = None, 
+        doping: float = 0.0, 
+        effective_m_e: float = 1.0, 
+        effective_m_h: float = None
+        ) -> None:
         """
         Description:
         ------------------------------------------------------------------------
@@ -140,7 +121,7 @@ class semiconductor(material):
         warning), calculates conduction and valence levels and calls the parent 
         constructor.
         
-        Arguments:
+        Parameters
         ------------------------------------------------------------------------
         Eg : float
             Energy gap of the semiconductor. Should be > 0
@@ -150,27 +131,27 @@ class semiconductor(material):
             and conduction band Ec. Generally, bulk affinities aredifferent from 
             the isolated atom ones, found in periodic table. Should be > 0. 
         
-        epsilon : float (optional)
-            Relative DC dielectric constant (permittivity). Defaults to 1.
+        epsilon : float, optional
+            Relative DC dielectric constant (permittivity), by default 1.
         
-        doping_type : str (optional)
+        doping_type : str, optional
             Can be 'n' or 'p'. Defaults to None.
         
-        doping : float (optional)
+        doping : float, optional
             Doping density of the type specified in doping_type, expressed in 
-            cm-3. Only one (strong) doping type supported. Defaults to None.
+            cm-3. Only one (strong) doping type supported, by default None.
             
-        effective_m_e : int (optional)
+        effective_m_e : float, optional
             effective electron mass. It's used to calculate density of states. 
             If n_v is the number of conduction band minima valleys in whole band
             structure, effective_m_e = (n_v^2 mx my mz)^(1/3), where the three 
             effective masses around principal axes. This software is just for 
             plotting, rigour in the choice of this parameter can be easily 
-            avoided without any consequences. Defaults to 1.
+            avoided without any consequences, by default 1.0
         
-        effective_m_h : float (optional)
+        effective_m_h : float, optional
             effective hole mass. Same as electron case. If None, it's set equal 
-            to effective_m_e. Defaults to None.
+            to effective_m_e, by default None.
         """
         if effective_m_h is None:
             effective_m_h = effective_m_e
@@ -179,10 +160,12 @@ class semiconductor(material):
         Nv = 2*(2*np.pi*E_MASS*effective_m_h*kT/PLANCK_H**2)**1.5
         ni = np.sqrt(Nc*Nv*np.exp(-Eg/kT))
 
-        if doping is not None and doping < ni:
-            warnings.warn("You have chosen a too low doping (< intrinsic \
-                doping), units are cm-3. Assuming no doping")
+        if doping < ni:
             doping_type = None
+            if doping > 0.0:
+                warnings.warn("You have chosen a too low doping (< intrinsic \
+                doping), units are cm-3. Assuming no doping")
+            
         
         if doping_type == 'n':
             self.n = doping
@@ -202,8 +185,51 @@ class semiconductor(material):
         Ev = -kT*np.log(Nv/self.p)
         super().__init__(epsilon, Ec, Ev, electron_affinity)
     
-    def is_p_doped(self):
+    def is_p_doped(self
+        ) -> bool:
         return self.p > self.n            
     
-    def is_n_doped(self):
+    def is_n_doped(self
+        ) -> bool:
         return self.n > self.p
+
+
+class layer:
+    """
+    Description
+    -----------
+    Once materials are defined, layer is only used to couple material type
+    with thickness. An ordered list of layers (left to right) is used to 
+    initialize band_diagram object (top level class)
+    
+    Attributes
+    ----------
+    thickness : float
+        thickness of layer in micrometer (um)
+    material : material
+        material type. Some general use materials are already defined in
+        tutorials
+    """
+    def __init__(self, 
+        thickness: float, 
+        material: material
+        ) -> None:
+        """
+        Once materials are defined, layer is only used to couple material type
+        with thickness. An ordered list of layers (left to right) is used to 
+        initialize mesh object (top level class)
+        
+        Parameters
+        ----------
+        thickness : float
+            thickness of layer in micrometer (um)
+        material : material
+            material type. Some general use materials are already defined in
+            tutorials
+        """
+        self.thickness = thickness
+        self.material = material
+
+
+
+
