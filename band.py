@@ -86,8 +86,8 @@ class band_diagram:
         self.Ef = np.zeros(n_points) # Fermi level is common at 0 applied voltage
         self.layers = layers
         del self.interfaces[0] # remove -1:0-th interface
-        
     
+    # TODO: design with bias between ends
     def bend(self
              ) -> None:
         """
@@ -153,16 +153,17 @@ class band_diagram:
                 -c*densities[i+1]/epsilons[i+1]*(self.grid[position:end] - position*self.thickness/n_points - depletion_right)**2,
                 np.zeros(n_points-end)
             ))
-            
             # Ec, Ev, E0 are mantained parallel
             for k in self.levels.keys():
                 self.levels[k] += bending
         
     
-    
+    # TODO: greyscale for electron occupations, change style of levels
     def plot(self, 
         display_E0: bool = False, 
-        show: bool = True
+        show: bool = True,
+        display_eh: bool = False,
+        smearing: float = 0.5
         ) -> None:
         """
         Plotter of band_diagram. Plots conduction band Ec, valence band Ev,
@@ -175,11 +176,48 @@ class band_diagram:
         show : bool, optional
             If False, plt.show() has to be performed manually. Useful if we want
             multiple plots on one figure, by default True
+        display_eh: bool, optional
+            If True, displays density of electrons (red) and holes (blue),
+            according to fictious smearing
+        smearing: float, optional
+            At 300 K should be 0.026 eV, but can be set to higher values for
+            representative purposes of the two populations
         """
-        for key, level in self.levels.items():
-            if key != 'E0' or display_E0:
-                plt.plot(self.grid, level, label=key)
-        plt.plot(self.grid, self.Ef)
+        if display_eh:
+            n_points = self.Ef.size
+            list_of_levels = [self.levels['Ec'], self.levels['Ev'], self.Ef]
+            E_min = min([min(E) for E in list_of_levels])
+            E_max = max([max(E) for E in list_of_levels])
+            x, y = np.meshgrid(self.grid, np.linspace(E_min-0.1, E_max+0.1, 1000))
+            
+            z_el = np.exp(-(y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
+            z_el = np.where(z_el>1, 0, z_el)
+            for i in range(n_points):
+                for j, _y in enumerate(y):
+                    if _y[0] < self.levels['Ec'][i]:
+                        z_el[j][i] = 0.
+                        
+            z_min, z_max = z_el.min(), z_el.max()
+            plt.imshow(z_el, cmap='Reds', vmin=z_min, vmax=z_max,
+                extent=[x.min(), x.max(), y.min(), y.max()],
+                interpolation='bilinear', origin='lower', alpha=1.0)
+            
+            z_ho = np.exp((y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
+            z_ho = np.where(z_ho>1, 0, z_ho)
+            for i in range(n_points):
+                for j, _y in enumerate(y):
+                    if _y[0] > self.levels['Ev'][i]:
+                        z_ho[j][i] = 0.
+                    
+            plt.imshow(z_ho, cmap='Blues', vmin=z_min, vmax=z_max,
+                extent=[x.min(), x.max(), y.min(), y.max()],
+                interpolation='bilinear', origin='lower', alpha=0.75)
+        
+        plt.plot(self.grid, self.levels['Ec'], label='Ec', color='maroon')
+        plt.plot(self.grid, self.levels['Ev'], label='Ev', color='darkslategrey')
+        if display_E0:
+            plt.plot(self.grid, self.levels['E0'], label='E0', color='darkmagenta')
+        plt.plot(self.grid, self.Ef, label='Ef', linestyle='--', color='black')
         plt.legend()
         if show:
             plt.tight_layout()
