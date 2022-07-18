@@ -88,12 +88,33 @@ class band_diagram:
         del self.interfaces[0] # remove -1:0-th interface
     
     # TODO: design with bias between ends
-    def bend(self
+    def bend(self,
+        fermi: bool = False
              ) -> None:
         """
         Generates the right amount of bending to cancel out discontinuities on
         E0. Formulas are found in docs. Once device is initializated, first 
         apply a voltage (optional) and then type device.bend()
+        
+        Parameters
+        ----------
+        fermi : bool, optional
+            If True, fermi level is also bended to remove discontinuities, 
+            occurring in presence of applied voltage.
+            This procedure is maybe a bit unphysical, use it only to cancel 
+            discontinuities in populations during plotting, by default False
+        """
+        self.__bend(fermi=False)
+        if fermi:
+            self.__bend(fermi=True)
+        
+        
+    
+    def __bend(self,
+        fermi: bool
+             ) -> None:
+        """
+        Private method, does the hard work on bending
         """
         # electronic density is obtained for each layer, giving huge density to
         # metals (1e23 cm-3)
@@ -109,8 +130,7 @@ class band_diagram:
                 else:
                     density = mat.n
             else:
-                warnings.warn("Material is not metal nor semic, behaviour\
-                    not implemented yet")
+                warnings.warn("Material is not metal nor semic, behaviour not implemented yet")
             densities.append(density)
         
         # in every interface, bending depends on "left" and "right" material
@@ -119,7 +139,10 @@ class band_diagram:
         thicknesses = [layer.thickness for layer in self.layers]
         for i, position in enumerate(self.interfaces):
             overflow = []
-            delta_V = self.levels['E0'][position]-self.levels['E0'][position-1]
+            if fermi:
+                delta_V = self.Ef[position+1]-self.Ef[position-1]
+            else:
+                delta_V = self.levels['E0'][position]-self.levels['E0'][position-1]
             
             a = np.sqrt(2*EPSILON_0*epsilons[i]*epsilons[i+1] /
                         (   densities[i]*epsilons[i] +
@@ -141,8 +164,7 @@ class band_diagram:
             else:
                 end = round(position + depletion_right/self.thickness*n_points)          
             if len(overflow) != 0:
-                warnings.warn(f"Depletion region larger than thickness of \
-                    materials: {overflow}")
+                warnings.warn(f"Depletion region larger than thickness of materials: {overflow}")
             
             # left bending start in position - left_dep and ends in position +
             # right_dep. See calculations for details
@@ -154,9 +176,11 @@ class band_diagram:
                 np.zeros(n_points-end)
             ))
             # Ec, Ev, E0 are mantained parallel
-            for k in self.levels.keys():
-                self.levels[k] += bending
-        
+            if fermi:
+                self.Ef += bending
+            else:
+                for k in self.levels.keys():
+                    self.levels[k] += bending
     
     # TODO: greyscale for electron occupations, change style of levels
     def plot(self, 
@@ -178,10 +202,10 @@ class band_diagram:
             multiple plots on one figure, by default True
         display_eh: bool, optional
             If True, displays density of electrons (red) and holes (blue),
-            according to fictious smearing
+            according to fictious smearing, by default False
         smearing: float, optional
             At 300 K should be 0.026 eV, but can be set to higher values for
-            representative purposes of the two populations
+            representative purposes of the two populations, by default 0.5
         """
         if display_eh:
             n_points = self.Ef.size
@@ -211,7 +235,7 @@ class band_diagram:
                     
             plt.imshow(z_ho, cmap='Blues', vmin=z_min, vmax=z_max,
                 extent=[x.min(), x.max(), y.min(), y.max()],
-                interpolation='bilinear', origin='lower', alpha=0.75)
+                interpolation='bilinear', origin='lower', alpha=0.70)
         
         plt.plot(self.grid, self.levels['Ec'], label='Ec', color='maroon')
         plt.plot(self.grid, self.levels['Ev'], label='Ev', color='darkslategrey')
