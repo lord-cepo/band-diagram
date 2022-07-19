@@ -187,6 +187,9 @@ def AlGaAs(x, doping_type=None, doping=0):
         effective_m_h=(0.51+0.25*x)**1.5 if x<0.41 else (0.85-0.14*x)**1.5
     )
 
+list_of_semiconductors = [
+    Si, GaAs, Ge, GaP, InAs, GaSb, InSb, InP, AlN, InN, GaN 
+]
 
 # https://en.wikipedia.org/wiki/Work_function#Work_functions_of_elements
 
@@ -217,3 +220,8 @@ Sn = material.metal(work_function=4.42)
 Te = material.metal(work_function=4.95)
 Ti = material.metal(work_function=4.33)
 Zn = material.metal(work_function=3.63) # up to 4.9
+
+list_of_metals = [
+    Ag, Al, As, Au, B , C , Ca, Cd, Cu, Fe, Ga, In, K , 
+    Li, Mg, Mn, Na, Pb, Pd, Pt, Sb, Se, Sn, Te, Ti, Zn
+]
