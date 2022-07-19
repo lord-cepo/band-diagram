@@ -9,7 +9,7 @@ has not been implemented yet;
 , infinite DC dielectric constant;
 
 # tutorials
-**Installation**: clone this repository. Core modules are three: 
+**Installation**: clone this repository. **Requirements**: `numpy` and `matplotlib`. There are three core modules: 
 - [`material.py`](https://github.com/lord-cepo/band-diagram/blob/master/material.py), containing the definition of metal and semiconductor classes; 
 - [`mat_data.py`](https://github.com/lord-cepo/band-diagram/blob/master/mat_data.py), a tiny database of semiconductors and metals that can be used as a playground;
 - [`band.py`](https://github.com/lord-cepo/band-diagram/blob/master/band.py), calculates band bending and plots the results.
