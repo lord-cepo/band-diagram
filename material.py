@@ -193,6 +193,7 @@ class semiconductor(material):
         ) -> bool:
         return self.n > self.p
 
+# TODO: insulator material
 
 class layer:
     """

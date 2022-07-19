@@ -191,7 +191,7 @@ class band_diagram:
                 for k in self.levels.keys():
                     self.levels[k] += bending
     
-    # TODO: greyscale for electron occupations, change style of levels
+    
     def plot(self,
         title: str = None, 
         display_E0: bool = False, 

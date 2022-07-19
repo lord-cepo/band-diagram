@@ -41,7 +41,7 @@ def test_nondegenerate(Eg, doping_type, doping):
     assert obj.levels['Ev'] <= 0
 
 ########################################
-# band.py
+# band.py and mat_data.py
 ########################################
 
 # after bending, E0 should be continuous, no matter of the applied voltage
