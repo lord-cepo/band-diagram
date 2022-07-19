@@ -21,13 +21,19 @@ class band_diagram:
     
     Methods
     -------
-    bend()
+    reset()
+        just resets the device
+    bend(fermi=False)
         does the dirty job of bending bands in both sides of each interface,
         allowing E0 to be continuous.
-    plot(display_E0=False, show=True)
+    plot(title=None, display_E0=False, show=True, display_eh=False)
         plots Ef, Ec, Ev and E0 if display_E0 is True. show should be set to
         false if we want to insert plt.show() manually (multiple plots in same
         pane)
+    apply_voltage(volt, index=None)
+        moves all four levels of -volt of specified layer. Layers are numbered
+        from 0 and from left to right, by default voltage is applied to 
+        rightmost layer 
     
     Attributes
     ----------
@@ -87,10 +93,14 @@ class band_diagram:
         self.layers = layers
         del self.interfaces[0] # remove -1:0-th interface
     
+    def reset(self,
+        ) -> None:
+        self = self.__init__(self.layers)
+    
     # TODO: design with bias between ends
     def bend(self,
         fermi: bool = False
-             ) -> None:
+        ) -> None:
         """
         Generates the right amount of bending to cancel out discontinuities on
         E0. Formulas are found in docs. Once device is initializated, first 
@@ -107,12 +117,11 @@ class band_diagram:
         self.__bend(fermi=False)
         if fermi:
             self.__bend(fermi=True)
-        
-        
+             
     
     def __bend(self,
         fermi: bool
-             ) -> None:
+        ) -> None:
         """
         Private method, does the hard work on bending
         """
@@ -183,7 +192,8 @@ class band_diagram:
                     self.levels[k] += bending
     
     # TODO: greyscale for electron occupations, change style of levels
-    def plot(self, 
+    def plot(self,
+        title: str = None, 
         display_E0: bool = False, 
         show: bool = True,
         display_eh: bool = False,
@@ -195,6 +205,8 @@ class band_diagram:
 
         Parameters
         ----------
+        title : str, optional
+            title of the plot, by default no title
         display_E0 : bool, optional
             Displays vacuum level. Defaults to False.
         show : bool, optional
@@ -207,6 +219,8 @@ class band_diagram:
             At 300 K should be 0.026 eV, but can be set to higher values for
             representative purposes of the two populations, by default 0.5
         """
+        if title is not None:
+            plt.title(title)
         if display_eh:
             n_points = self.Ef.size
             list_of_levels = [self.levels['Ec'], self.levels['Ev'], self.Ef]
@@ -232,7 +246,7 @@ class band_diagram:
                 for j, _y in enumerate(y):
                     if _y[0] > self.levels['Ev'][i]:
                         z_ho[j][i] = 0.
-                    
+
             plt.imshow(z_ho, cmap='Blues', vmin=z_min, vmax=z_max,
                 extent=[x.min(), x.max(), y.min(), y.max()],
                 interpolation='bilinear', origin='lower', alpha=0.70)
@@ -242,15 +256,19 @@ class band_diagram:
         if display_E0:
             plt.plot(self.grid, self.levels['E0'], label='E0', color='darkmagenta')
         plt.plot(self.grid, self.Ef, label='Ef', linestyle='--', color='black')
+        plt.ylabel('energy ($eV$)')
+        plt.xlabel('layer thickness ($\mu m$)')
         plt.legend()
         if show:
             plt.tight_layout()
+            # saves to plots folder (executing some_device it saves everything)
+            # plt.savefig('plots/'+ title + '.png', bbox_inches='tight', dpi=200)
             plt.show()
         
         
     def apply_voltage(self, 
         volt: float, 
-        ith_layer: int = None
+        index: int = None
         ) -> None:
         """
         Translate rigidly all the levels of the specified layer by minus voltage
@@ -260,7 +278,7 @@ class band_diagram:
         volt : float
             Voltage applied (in Volts). If positive, the energy shift will be 
             negative: energy = (-e) * voltage
-        ith_layer : int, optional
+        index : int, optional
             Specifies which layer will receive voltage. Every other layer should
             be considered as grounded. Naturally, we are under the (not so 
             realistic) hypothesis that voltage drops, and hence jumps in Ef,
@@ -271,18 +289,18 @@ class band_diagram:
         n_of_interfaces = len(self.interfaces)
         # equals to n_points inside __init__
         n_points = self.Ef.size
-        if ith_layer is None:
+        if index is None:
             # if not specified, voltage is applied to last layer (N_layers-1)th
-            ith_layer = n_of_interfaces
+            index = n_of_interfaces
         
         # first and last elements are added to avoid overflow
         positions = [0] + self.interfaces + [n_points]
         
         # creation of array of volts that will be added to each level
         volts = np.concatenate((
-            np.zeros(positions[ith_layer]),
-            volt*np.ones(positions[ith_layer+1]-positions[ith_layer]),
-            np.zeros(n_points-positions[ith_layer+1])
+            np.zeros(positions[index]),
+            volt*np.ones(positions[index+1]-positions[index]),
+            np.zeros(n_points-positions[index+1])
         ))
         
         # volts SUBTRACTED from Ef, because energy = (-e) * voltage
