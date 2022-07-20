@@ -56,11 +56,11 @@ class band_diagram:
     """
     def __init__(self, 
         layers: Iterable[material.layer],
-        n_points: int = 1000,  
+        n_points: int = 1000
         ) -> None:
         """
         From the layers list, this constructor creates builds flat Ec, Ev, E0
-        levels, keeping the Fermi level constant.
+        levels, keeping the Fermi level constant, passing from reset() method
 
         Parameters
         ----------
@@ -70,7 +70,35 @@ class band_diagram:
         n_points : int, optional
             Number of points in the actual plot, by default 1000.
         """
-        self.thickness = sum([layer.thickness for layer in layers]) 
+        if layers != []:
+            self.reset(layers, n_points)
+        else:
+            print('Device cannot be initialized if layers is []')
+            
+    
+    def reset(self,
+        layers: Iterable[material.layer] = [],
+        n_points: int = 1000
+        ) -> None:
+        """
+        User can call it without parameters (after having initialized the
+        device) to reset to initial conditions, otherwise is called by __init__
+
+        Parameters
+        ----------
+        layers : Iterable[material.layer], optional
+            list of layer instances. Example: [layer(thickness1, material1),
+            layer(thickness2, material2)]. Layer is inside material module,
+            by default []
+        n_points : int, optional
+            Number of points in the actual plot, by default 1000.
+        """
+        
+        # executed if reset is called by __init__
+        if layers != []:
+            self.layers = layers
+        
+        self.thickness = sum([layer.thickness for layer in self.layers]) 
         self.grid = np.linspace(0, self.thickness, n_points)
         self.levels = {
             'Ec': np.zeros(n_points),
@@ -79,7 +107,7 @@ class band_diagram:
         }
         partial_thickness = 0.
         self.interfaces = []
-        for layer in layers:
+        for layer in self.layers:
             start = round(partial_thickness/self.thickness*n_points)
             self.interfaces.append(start)
             end = round((partial_thickness+layer.thickness)/self.thickness*n_points)
@@ -90,12 +118,7 @@ class band_diagram:
                 ))
             partial_thickness += layer.thickness
         self.Ef = np.zeros(n_points) # Fermi level is common at 0 applied voltage
-        self.layers = layers
         del self.interfaces[0] # remove -1:0-th interface
-    
-    def reset(self,
-        ) -> None:
-        self = self.__init__(self.layers)
     
     # TODO: design with bias between ends
     def bend(self,
