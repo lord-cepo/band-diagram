@@ -71,6 +71,7 @@ true immediately after calling bend(). Discontinuity occurs if the energy
 distance between two consecutive points is more than 10 meV.
 """
 def E0_is_continuous(device):
+    device.bend()
     continuous = True
     for i, el in enumerate(device.levels['E0']):
         if i>0 and abs(el-device.levels['E0'][i-1]) > 1e-2:
@@ -98,7 +99,6 @@ def test_layer_thick(layer):
         ],
         n_points=10000
     )
-    device.bend()
     assert E0_is_continuous(device)
 
 """
@@ -116,7 +116,6 @@ def test_semiconductor_types(semi1, semi2):
             material.layer(1, semi2())
         ]
     )
-    device.bend()
     assert E0_is_continuous(device)
 
 """
@@ -136,5 +135,4 @@ def test_semi_metal_types(metal, semi):
         ],
         n_points=10000
     )
-    device.bend()
     assert E0_is_continuous(device)
