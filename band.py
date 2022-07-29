@@ -137,12 +137,12 @@ class band_diagram:
             This procedure is maybe a bit unphysical, use it only to cancel 
             discontinuities in populations during plotting, by default False
         """
-        self.__bend(fermi=False)
+        self._bend(fermi=False)
         if fermi:
-            self.__bend(fermi=True)
+            self._bend(fermi=True)
              
     
-    def __bend(self,
+    def _bend(self,
         fermi: bool
         ) -> None:
         """
