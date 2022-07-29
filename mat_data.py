@@ -1,15 +1,22 @@
 import material
 
 """
-Some thought on effective masses. We want density of states masses, given (for
-electrons) as effective_m_e = (n_v^2 mx my mz)^(1/3). Silicon has (as an 
-example) two transversal masses and one longitudinal mass and six equivalent
-direcions n_v (six cigars). Regarding hole masses, I have not found anything on
-the web, but since DOS scales with m^3/2 and since most of the semiconductors
-have p level splitting (and therefore light and heavy holes) I assumed that the
-formula (for isotropic valence band (???)) is effective_m_h^3/2 = m_heavy^3/2 +
-m_light^3/2. Maybe split-off band does something to DOS at different energy gap,
-but it's not that important (we are tolerating worse approximations)
+Description
+-----------
+Datasheet of some of the most used semiconductor and metals. A list of all
+semiconductors and all metals is defined.
+
+Semiconductors
+--------------
+Semiconductors are called by their chemical formula, as a function of doping 
+type and doping density. Ternary compounds (e.g. Al(x) Ga(1-x) As) are functions
+with the additional parameter x.
+Example: Silicon = Si('n', 1e15)
+
+Metals
+------
+Metals are directly initializated, without any user-defined parameter.
+Example: Gold = Au
 """
 
 # https://www.ioffe.ru/SVA/NSM/Semicond/
@@ -186,6 +193,18 @@ def AlGaAs(x, doping_type=None, doping=0):
         effective_m_e=(0.063+0.083*x)**1.5 if x<0.41 else (0.85-0.14*x)**1.5,
         effective_m_h=(0.51+0.25*x)**1.5 if x<0.41 else (0.85-0.14*x)**1.5
     )
+
+"""
+Some thought on effective masses. We want density of states masses, given (for
+electrons) as effective_m_e = (n_v^2 mx my mz)^(1/3). Silicon has (as an 
+example) two transversal masses and one longitudinal mass and six equivalent
+direcions n_v (six cigars). Regarding hole masses, I have not found anything on
+the web, but since DOS scales with m^3/2 and since most of the semiconductors
+have p level splitting (and therefore light and heavy holes) I assumed that the
+formula (for isotropic valence band (???)) is effective_m_h^3/2 = m_heavy^3/2 +
+m_light^3/2. Maybe split-off band does something to DOS at different energy gap,
+but it's not that important (we are tolerating worse approximations)
+"""
 
 list_of_semiconductors = [
     Si, GaAs, Ge, GaP, InAs, GaSb, InSb, InP, AlN, InN, GaN 
