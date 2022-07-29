@@ -7,8 +7,12 @@ from hypothesis import given, strategies as st
 # material.py
 ########################################
 
-# tests if the energy gap of the metal is zero and if the distance from the
-# vacuum level corresponds to the work function
+"""
+Given: 
+    material is metal, with various work functions
+Tests: 
+    if energy gap is zero and vacuum level corresponds with work function 
+"""
 @given(work_function=st.floats(min_value=1e-2, max_value=1e2))
 def test_metal(work_function):
     obj = material.metal(work_function=work_function)
@@ -16,7 +20,16 @@ def test_metal(work_function):
     assert obj.levels['Ev'] == 0
     assert obj.levels['E0'] == work_function
 
-# tests if there is a positive energy gap in semiconductors
+"""
+Given: 
+    semiconductor with a broad range of Eg and doping 
+    - 1e-4 < Eg < 1e2
+    - 1e-10 < effective_m < 1e10
+    - doping type: n, p, undoped
+    - doping < 1e20
+Tests: 
+    if energy gap is positive
+"""
 @given(Eg=st.floats(min_value=1e-4, max_value=1e2),
     effective_m_e=st.floats(min_value=1e-10, max_value=1e10),
     effective_m_h=st.floats(min_value=1e-10, max_value=1e10),
@@ -30,8 +43,16 @@ def test_semiconductor(Eg, doping_type, doping, effective_m_e, effective_m_h):
     )
     assert obj.levels['Ec'] > obj.levels['Ev']
 
-# tests at which limit the semiconductor is degenerate. We can safely assume 
-# that at doping < 1e17 every semiconductor is non-degenerate
+"""
+Given: 
+    semiconductor with narrower range of Eg and mild doping
+    - 0.01 < Eg < 10
+    - doping type: n, p, undoped
+    - doping < 1e17
+
+Tests: 
+    if semiconductor is nondegenerate, i.e. if Fermi level is within the gap
+"""
 @given(Eg=st.floats(min_value=0.01, max_value=10.0),
     doping_type=st.sampled_from(['n', 'p', 'others']),
     doping=st.floats(min_value=1e0, max_value=1e17))
@@ -44,7 +65,11 @@ def test_nondegenerate(Eg, doping_type, doping):
 # band.py and mat_data.py
 ########################################
 
-# after bending, E0 should be continuous, no matter of the applied voltage
+"""
+Support function, tests if vacuum level is continuous. This should be always
+true immediately after calling bend(). Discontinuity occurs if the energy
+distance between two consecutive points is more than 10 meV.
+"""
 def E0_is_continuous(device):
     continuous = True
     for i, el in enumerate(device.levels['E0']):
@@ -53,10 +78,15 @@ def E0_is_continuous(device):
             break
     return continuous
              
-# this test is to find a safe layer thickness range in which we can operate
-# note that condition on discontinuity is 1e-2 eV, max thickness is around 15 
-# with a grid of 10000 points. Raise n_points if you want to increase resolution
-# with higher thicknesses      
+"""
+Given: 
+    band diagram with n/p-Si with various thicknesses
+    - 1 nm < thickness < 10 um
+    - points on band diagram grid = 10_000
+Tests: 
+    if E0 is continuous, to find safe thickness range over which the image is 
+    too grainy. Increase grid resolution if you want a clearer image
+"""
 @given(layer=st.floats(min_value=1e-3, max_value=1e1))
 def test_layer_thick(layer):
     Si_n = mat_data.Si('n', 1e16)
@@ -71,7 +101,12 @@ def test_layer_thick(layer):
     device.bend()
     assert E0_is_continuous(device)
 
-# tests if every semiconductor is defined decently and is ready-to-use
+"""
+Given:
+    a random semiconductor/semiconductor junction, 2 um thick
+Tests:
+    if E0 is continuous, after bending
+"""
 @given(semi1=st.sampled_from(mat_data.list_of_semiconductors),
     semi2=st.sampled_from(mat_data.list_of_semiconductors))
 def test_semiconductor_types(semi1, semi2):
@@ -84,8 +119,13 @@ def test_semiconductor_types(semi1, semi2):
     device.bend()
     assert E0_is_continuous(device)
 
-# tests some semiconductor clashes with some metal's work function
-# n_points have to be higher, as in test_layer_thick
+"""
+Given:
+    a random metal/semiconductor junction, 2 um thick
+Tests:
+    if E0 is continuous, after bending. Grid must be of 10_000 points, metals
+    introduce a more discontinuous behaviour
+"""
 @given(metal=st.sampled_from(mat_data.list_of_metals),
     semi=st.sampled_from(mat_data.list_of_semiconductors))
 def test_semi_metal_types(metal, semi):
