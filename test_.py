@@ -2,6 +2,9 @@ import material
 import band
 import mat_data
 from hypothesis import given, strategies as st
+import random
+random.seed(4169)
+import numpy as np
 
 ########################################
 # material.py
@@ -70,14 +73,21 @@ Support function, tests if vacuum level is continuous. This should be always
 true immediately after calling bend(). Discontinuity occurs if the energy
 distance between two consecutive points is more than 10 meV.
 """
-def E0_is_continuous(device):
+def E_is_continuous(level, device):
     device.bend()
     continuous = True
-    for i, el in enumerate(device.levels['E0']):
-        if i>0 and abs(el-device.levels['E0'][i-1]) > 1e-2:
-            continuous = False
-            break
-    return continuous
+    if level == 'Ef':
+        for i, el in enumerate(device.Ef):
+            if i>0 and abs(el-device.Ef[i-1]) > 1e-2:
+                continuous = False
+                break
+        return continuous
+    else:
+        for i, el in enumerate(device.levels[level]):
+            if i>0 and abs(el-device.levels[level][i-1]) > 1e-2:
+                continuous = False
+                break
+        return continuous
              
 """
 Given: 
@@ -99,7 +109,7 @@ def test_layer_thick(layer):
         ],
         n_points=10000
     )
-    assert E0_is_continuous(device)
+    assert E_is_continuous('E0', device)
 
 """
 Given:
@@ -116,7 +126,7 @@ def test_semiconductor_types(semi1, semi2):
             material.layer(1, semi2())
         ]
     )
-    assert E0_is_continuous(device)
+    assert E_is_continuous('E0', device)
 
 """
 Given:
@@ -135,4 +145,136 @@ def test_semi_metal_types(metal, semi):
         ],
         n_points=10000
     )
-    assert E0_is_continuous(device)
+    assert E_is_continuous('E0', device)
+
+"""
+Given:
+    fixed junction on which random voltages are applied
+Tests:
+    if the discontinuity of Fermi level across the interface is minus the
+    applied voltage
+"""
+def test_apply_voltage():
+    device = band.band_diagram(
+        [
+            material.layer(1, mat_data.Si('p', 1e15)),
+            material.layer(1, mat_data.Ge('n', 1e16))
+        ]
+    )
+    s = 0
+    n_points = device.Ef.size
+    for i in range(100):
+        volt = i*random.random()
+        s += volt
+        device.apply_voltage(volt)
+        assert abs(device.Ef[n_points//2]-device.Ef[n_points//2-1] + s) < 1e-10
+
+"""
+Given:
+    device on which we call bend() a random amount of times
+Tests:
+    if the device has not changed drastically, i.e. if Ec and Ev has not moved
+    with respect to the first bend() call. bend() effectively make a change once
+    called multiple times, but only slightly and without being graphically
+    noticed (bending after first shift each point by no more than 1 meV).
+"""
+def test_multi_bend_Ev_Ec():
+    device = band.band_diagram(
+        [
+            material.layer(1, mat_data.Si('p', 1e15)),
+            material.layer(1, mat_data.Si('n', 1e15))
+        ]
+    )
+    device.bend()
+    initial_Ev = np.copy(device.levels['Ev'])
+    initial_Ec = np.copy(device.levels['Ec'])
+    for _ in range(random.randint(1,10)):
+        device.bend()
+        assert np.sum(np.abs(initial_Ev-device.levels['Ev'])) < 1
+        assert np.sum(np.abs(initial_Ec-device.levels['Ec'])) < 1
+
+"""
+Given:
+    device on which we call bend() a random amount of times
+Tests:
+    if E0 is continuous
+"""
+def test_multi_bend_E0():
+    device = band.band_diagram(
+        [
+            material.layer(1, mat_data.Si('p', 1e15)),
+            material.layer(1, mat_data.Si('n', 1e15))
+        ]
+    )
+    for _ in range(random.randint(1,10)):
+        device.bend()
+    assert E_is_continuous('E0', device)
+
+"""
+Given:
+    device in which random methods of band_diagram are called a random amount of
+    times.
+Tests:
+    if E0 is continuous
+"""
+def test_random_calls():
+    device = band.band_diagram(
+        [
+            material.layer(1, mat_data.Si('p', 1e15)),
+            material.layer(1, mat_data.Si('n', 1e15))
+        ]
+    )
+    for _ in range(random.randint(1, 10)):
+        r = random.randint(1, 3)
+        match r:
+            case 1:
+                device.apply_voltage(r)
+            case 2:
+                device.bend()
+            case 3:
+                device.reset()
+    E_is_continuous('E0', device)
+    
+"""
+Given:
+    device in a random state
+Tests:
+    if reset() is able to bring back the device to original state.
+"""
+def test_reset():
+    device = band.band_diagram(
+        [
+            material.layer(1, mat_data.Si('p', 1e15)),
+            material.layer(1, mat_data.Si('n', 1e15))
+        ]
+    )
+    initial_Ev = np.copy(device.levels['Ev'])
+    initial_Ec = np.copy(device.levels['Ec'])
+    for _ in range(random.randint(1, 10)):
+        r = random.randint(1, 2)
+        match r:
+            case 1:
+                device.apply_voltage(r)
+            case 2:
+                device.bend()
+    device.reset()
+    assert np.sum(np.abs(initial_Ev - device.levels['Ev'])) < 1e-10
+    assert np.sum(np.abs(initial_Ec - device.levels['Ec'])) < 1e-10
+
+"""
+Given:
+    device with random voltage applied and with Fermi level bended
+Tests:
+    if Fermi level is continuous
+"""
+def test_bend_fermi():
+    device = band.band_diagram(
+        [
+            material.layer(1, mat_data.Si('p', 1e15)),
+            material.layer(1, mat_data.Si('n', 1e15))
+        ]
+    )
+    device.apply_voltage(random.randint(-10, 10))
+    device.bend(fermi=True)
+    assert E_is_continuous('Ef', device)
+
