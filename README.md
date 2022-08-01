@@ -5,8 +5,7 @@ Voltage can be applied to single layers of material. The script is intended as a
 - the existence of surface states in neglected;
 - band bending occurs under full depletion region approximation, boltzmann smearing correction on the population at the edges of the depletion region
 has not been implemented yet;
-- metals are designed as semiconductor with zero band gap, high fixed electronic density ($10^{23}\text{ cm}^{-3}$)
-, infinite DC dielectric constant;
+- metals are designed as semiconductor with zero band gap, high fixed electronic density ( $10^{23}\text{ cm}^{-3}$ ), infinite DC dielectric constant;
 
 # tutorials
 **Installation**: clone this repository. **Requirements**: `numpy` and `matplotlib`. There are three core modules: 
