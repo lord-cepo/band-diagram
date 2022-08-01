@@ -231,28 +231,27 @@ class band_diagram:
         E_max = max([max(E) for E in list_of_levels])
         x, y = np.meshgrid(self.grid, np.linspace(E_min-0.1, E_max+0.1, 1000))
         
-        z_el = np.exp(-(y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
-        z_el = np.where(z_el>1, 0, z_el)
+        z = np.exp(-(y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
+        
+        z_el = np.where(z>1, np.nan, z)
         for i in range(n_points):
             for j, _y in enumerate(y):
                 if _y[0] < self.levels['Ec'][i]:
-                    z_el[j][i] = 0.
-                    
-        z_min, z_max = z_el.min(), z_el.max()
-        plt.imshow(z_el, cmap='Reds', vmin=z_min, vmax=z_max,
-            extent=[x.min(), x.max(), y.min(), y.max()],
-            interpolation='bilinear', origin='lower', alpha=1.0)
+                    z_el[j][i] = np.nan
         
-        z_ho = np.exp((y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
-        z_ho = np.where(z_ho>1, 0, z_ho)
+        z_ho = np.where(1/z>1, np.nan, 1/z)
         for i in range(n_points):
             for j, _y in enumerate(y):
                 if _y[0] > self.levels['Ev'][i]:
-                    z_ho[j][i] = 0.
+                    z_ho[j][i] = np.nan
 
+        z_min, z_max = 0, 1
+        plt.imshow(z_el, cmap='Reds', vmin=z_min, vmax=z_max,
+            extent=[x.min(), x.max(), y.min(), y.max()],
+            interpolation='nearest', origin='lower')
         plt.imshow(z_ho, cmap='Blues', vmin=z_min, vmax=z_max,
             extent=[x.min(), x.max(), y.min(), y.max()],
-            interpolation='bilinear', origin='lower', alpha=0.70)
+            interpolation='nearest', origin='lower')
 
     def plot(self,
         title: str = None, 
