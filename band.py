@@ -214,7 +214,46 @@ class band_diagram:
                 for k in self.levels.keys():
                     self.levels[k] += bending
     
-    
+    def _display_eh(self,
+        smearing: float
+        ) -> None:
+        """
+        Private method used to display electron and hole smearing
+
+        Parameters
+        ----------
+        smearing : float
+            equals to kBT, by default 0.5 eV
+        """
+        n_points = self.Ef.size
+        list_of_levels = [self.levels['Ec'], self.levels['Ev'], self.Ef]
+        E_min = min([min(E) for E in list_of_levels])
+        E_max = max([max(E) for E in list_of_levels])
+        x, y = np.meshgrid(self.grid, np.linspace(E_min-0.1, E_max+0.1, 1000))
+        
+        z_el = np.exp(-(y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
+        z_el = np.where(z_el>1, 0, z_el)
+        for i in range(n_points):
+            for j, _y in enumerate(y):
+                if _y[0] < self.levels['Ec'][i]:
+                    z_el[j][i] = 0.
+                    
+        z_min, z_max = z_el.min(), z_el.max()
+        plt.imshow(z_el, cmap='Reds', vmin=z_min, vmax=z_max,
+            extent=[x.min(), x.max(), y.min(), y.max()],
+            interpolation='bilinear', origin='lower', alpha=1.0)
+        
+        z_ho = np.exp((y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
+        z_ho = np.where(z_ho>1, 0, z_ho)
+        for i in range(n_points):
+            for j, _y in enumerate(y):
+                if _y[0] > self.levels['Ev'][i]:
+                    z_ho[j][i] = 0.
+
+        plt.imshow(z_ho, cmap='Blues', vmin=z_min, vmax=z_max,
+            extent=[x.min(), x.max(), y.min(), y.max()],
+            interpolation='bilinear', origin='lower', alpha=0.70)
+
     def plot(self,
         title: str = None, 
         display_E0: bool = False, 
@@ -245,35 +284,8 @@ class band_diagram:
         if title is not None:
             plt.title(title)
         if display_eh:
-            n_points = self.Ef.size
-            list_of_levels = [self.levels['Ec'], self.levels['Ev'], self.Ef]
-            E_min = min([min(E) for E in list_of_levels])
-            E_max = max([max(E) for E in list_of_levels])
-            x, y = np.meshgrid(self.grid, np.linspace(E_min-0.1, E_max+0.1, 1000))
+            self._display_eh(smearing)
             
-            z_el = np.exp(-(y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
-            z_el = np.where(z_el>1, 0, z_el)
-            for i in range(n_points):
-                for j, _y in enumerate(y):
-                    if _y[0] < self.levels['Ec'][i]:
-                        z_el[j][i] = 0.
-                        
-            z_min, z_max = z_el.min(), z_el.max()
-            plt.imshow(z_el, cmap='Reds', vmin=z_min, vmax=z_max,
-                extent=[x.min(), x.max(), y.min(), y.max()],
-                interpolation='bilinear', origin='lower', alpha=1.0)
-            
-            z_ho = np.exp((y-self.Ef[(x/self.thickness*(n_points-1)).round().astype(int)])/smearing)
-            z_ho = np.where(z_ho>1, 0, z_ho)
-            for i in range(n_points):
-                for j, _y in enumerate(y):
-                    if _y[0] > self.levels['Ev'][i]:
-                        z_ho[j][i] = 0.
-
-            plt.imshow(z_ho, cmap='Blues', vmin=z_min, vmax=z_max,
-                extent=[x.min(), x.max(), y.min(), y.max()],
-                interpolation='bilinear', origin='lower', alpha=0.70)
-        
         plt.plot(self.grid, self.levels['Ec'], label='Ec', color='maroon')
         plt.plot(self.grid, self.levels['Ev'], label='Ev', color='darkslategrey')
         if display_E0:
@@ -285,7 +297,7 @@ class band_diagram:
         if show:
             plt.tight_layout()
             # saves to plots folder (executing some_device it saves everything)
-            # plt.savefig('plots/'+ title + '.png', bbox_inches='tight', dpi=200)
+            # plt.savefig('../plots/'+ title + '.png', bbox_inches='tight', dpi=200, facecolor='white', transparent=False)
             plt.show()
         
         
