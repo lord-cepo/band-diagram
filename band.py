@@ -142,16 +142,18 @@ class band_diagram:
             self._bend(fermi=True)
              
     
-    def _bend(self,
-        fermi: bool
+    def _densities(self,
         ) -> None:
         """
-        Private method, does the hard work on bending
+        Private method, calculates electronic density for each layer, giving 
+        huge density to metals (1e23 cm-3)
+
+        Returns
+        -------
+        list
+            density for each layer
         """
-        # electronic density is obtained for each layer, giving huge density to
-        # metals (1e23 cm-3)
-        densities = []
-        n_points = self.Ef.size
+        d = []
         for mat in [layer.material for layer in self.layers]:
             density = 0.0
             if type(mat) is material.metal:
@@ -163,18 +165,30 @@ class band_diagram:
                     density = mat.n
             else:
                 warnings.warn("Material is not metal nor semic, behaviour not implemented yet")
-            densities.append(density)
+            d.append(density)
+        return d
+        
+    
+    def _bend(self,
+        fermi: bool
+        ) -> None:
+        """
+        Private method, does the hard work on bending
+        """
+        # electronic density is obtained for each layer, giving huge density to
+        # metals (1e23 cm-3)
+        n_points = self.Ef.size
+        densities = self._densities()
         
         # in every interface, bending depends on "left" and "right" material
         # properties. These are just full depletion calculations.
         epsilons = [layer.material.epsilon for layer in self.layers]
         thicknesses = [layer.thickness for layer in self.layers]
         for i, position in enumerate(self.interfaces):
-            overflow = []
             if fermi:
                 delta_V = self.Ef[position+1]-self.Ef[position-1]
             else:
-                delta_V = self.levels['E0'][position]-self.levels['E0'][position-1]
+                delta_V = self  .levels['E0'][position]-self.levels['E0'][position-1]
             
             a = np.sqrt(2*EPSILON_0*epsilons[i]*epsilons[i+1] /
                         (   densities[i]*epsilons[i] +
@@ -184,6 +198,7 @@ class band_diagram:
             depletion_right = a*np.sqrt(densities[i]/densities[i+1])*1e4 # um
             
             # overflow check (warns if depletion > thickness)
+            overflow = []
             if depletion_left > thicknesses[i]:
                 overflow.append(i)
                 start = round(position - thicknesses[i]/self.thickness*n_points)
