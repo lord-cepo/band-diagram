@@ -143,7 +143,7 @@ class band_diagram:
              
     
     def _densities(self,
-        ) -> None:
+        ) -> list:
         """
         Private method, calculates electronic density for each layer, giving 
         huge density to metals (1e23 cm-3)
